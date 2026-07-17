@@ -4449,7 +4449,21 @@ async function signInWithGoogleReturn(){
     const licSnap=await db.ref('user_licences/'+cred.user.uid).once('value');
     const licence=licSnap.val();
     if(!licence){
-      we.textContent='This Google account isn\u2019t linked to a Habi-Food licence yet. Switch to the "First-Time Code" tab, fill in your details and access code, then tap "Continue with Google" there to link it.';
+      // Before treating this as a brand-new identity, check whether a real password
+      // account already exists for this email. If it does, this Google sign-in is an
+      // orphan duplicate of an existing account, not a genuinely new user \u2014 surfacing
+      // "not linked yet" here would push them toward creating a second, disconnected
+      // identity instead of using the one that's already set up.
+      let existingMethods=[];
+      try{ existingMethods=await firebase.auth().fetchSignInMethodsForEmail(cred.user.email); }catch(_){}
+      const hasPasswordAccount=existingMethods.includes('password');
+      try{ await firebase.auth().signOut(); }catch(_){}
+      if(window._authReady)await window._authReady; // restore anonymous session for rules
+      if(hasPasswordAccount){
+        we.innerHTML='This Google account (<strong>'+cred.user.email+'</strong>) matches an existing Habi-Food account that uses a licence + password login. Please use the "Log In" tab with your licence number and password instead \u2014 signing in with Google here would create a separate, disconnected account. Contact <a href="mailto:support@habi-food.com.au" style="color:var(--blue)">support@habi-food.com.au</a> if you\u2019d like these merged.';
+      }else{
+        we.textContent='This Google account isn\u2019t linked to a Habi-Food licence yet. Switch to the "First-Time Code" tab, fill in your details and access code, then tap "Continue with Google" there to link it.';
+      }
       return;
     }
     const snap=await db.ref('approved_users').orderByChild('licence').equalTo(licence).once('value');
@@ -4577,6 +4591,20 @@ async function signUpWithGoogle(){
   try{
     const provider=new firebase.auth.GoogleAuthProvider();
     const cred=await firebase.auth().signInWithPopup(provider);
+    // Guard against creating an orphan identity: if a password account already exists
+    // for this email (e.g. from an earlier migration or Log In signup), linking THIS
+    // brand-new Google uid to the licence would silently disconnect that existing
+    // account (approved_users/authUid would be reassigned away from it). Block and
+    // point the person at the real account instead.
+    let existingMethods=[];
+    try{ existingMethods=await firebase.auth().fetchSignInMethodsForEmail(cred.user.email); }catch(_){}
+    const hasOtherPasswordAccount=existingMethods.includes('password')&&cred.additionalUserInfo&&cred.additionalUserInfo.isNewUser;
+    if(hasOtherPasswordAccount){
+      try{ await firebase.auth().signOut(); }catch(_){}
+      if(window._authReady)await window._authReady;
+      we.innerHTML='An account already exists for <strong>'+cred.user.email+'</strong> with a licence + password login. Please use the "Log In" tab instead, or contact <a href="mailto:support@habi-food.com.au" style="color:var(--blue)">support@habi-food.com.au</a> to merge accounts.';
+      return;
+    }
     await _linkAuthToLicence(cred.user.uid,wildlifeReg,userData.id,cred.user.email);
     we.style.display='none';
     launch();
