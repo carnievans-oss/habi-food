@@ -6459,7 +6459,18 @@ function initFirebase(){
   db.ref('animals/'+wildlifeReg).on('value',snap=>{animals=snap.val()||{};renderAll();});
   db.ref('config/adminPin').once('value',snap=>{if(snap.val())adminPinHash=snap.val();});
   };
-  try{ if(typeof firebase!=='undefined'&&firebase.auth){ firebase.auth().signInAnonymously().then(_run).catch(e=>{console.warn('anon auth failed:',e);_run();}); } else { _run(); } }catch(e){ _run(); }
+  // signInAnonymously() REPLACES the current session with a brand-new anonymous one even
+  // when a real, non-anonymous user is already signed in — it is not a safe no-op. launch()
+  // calls initFirebase() on every entry path, including right after doLogin()'s genuine
+  // signInWithEmailAndPassword() succeeds, so the real session was being silently clobbered
+  // a moment after login completed. Only fall back to anonymous auth here if nobody is
+  // signed in yet — never downgrade an existing real session.
+  try{
+    const _existingUser=(typeof firebase!=='undefined'&&firebase.auth)?firebase.auth().currentUser:null;
+    if(_existingUser&&!_existingUser.isAnonymous){ _run(); }
+    else if(typeof firebase!=='undefined'&&firebase.auth){ firebase.auth().signInAnonymously().then(_run).catch(e=>{console.warn('anon auth failed:',e);_run();}); }
+    else { _run(); }
+  }catch(e){ _run(); }
 }
 
 // ═══════════════════════════════════════════════════
