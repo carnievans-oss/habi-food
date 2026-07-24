@@ -8836,6 +8836,8 @@ function generateDeecaReport(){
     Data sources: HabiFood network (anonymous aggregate, Wildlife Act 1975), DEECA VicMap EVC FeatureServer (CC BY 4.0), VicMap Admin LGA boundaries (CC BY 4.0). No Atlas of Living Australia. No predictive modelling.<br>
     Generated: ${m.aedt} AEDT · HabiFood v3.0 · habifood.com.au · support@habifood.com.au
   </div>`;
+
+  const html=reportShell('Aggregate Rescue & Release Intelligence','Wildlife Network Data Report · South-East Melbourne',
     'DEECA Wildlife Licensing · Biodiversity Division','#15803d',body);
   downloadReport(html,'HabiFood_DEECA_AggregateReport');
 }
@@ -8918,6 +8920,8 @@ function generateFireReport(){
     Data sources: FFMVic WMS planned burn schedule (live feed, Open Government Licence Victoria), HabiFood network rescue data (anonymous aggregate), iNaturalist research-grade observations (CC BY-NC), DEECA VicMap EVC FeatureServer (CC BY 4.0).<br>
     Generated: ${m.aedt} AEDT · HabiFood v3.0 · habifood.com.au · support@habifood.com.au
   </div>`;
+
+  const html=reportShell('Post-Burn Incident Intelligence','Wildlife Rescue Network Intelligence · Planned Burn Response',
     'FFMVic · CFA · DEECA Parks and Nature Victoria','#ea580c',body);
   downloadReport(html,'HabiFood_FFMVic_PostBurnIntelligence');
 }
