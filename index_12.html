@@ -41,7 +41,10 @@ try{
   window._hfDb=firebase.database();
   // Sign in anonymously AT PAGE LOAD so Security Rules (auth!=null) are satisfied
   // before any login/database read. Persists across reloads (LOCAL persistence).
-  window._authReady=(firebase.auth?firebase.auth().signInAnonymously().then(()=>{console.log('anon auth ready');}).catch(e=>{console.warn('anon auth:',e);}):Promise.resolve());
+  // _authOk/_authError are recorded (not just logged) so callers can tell a real
+  // sign-in failure apart from a database permission problem — both used to surface
+  // as the same confusing raw "PERMISSION_DENIED" message during account activation.
+  window._authReady=(firebase.auth?firebase.auth().signInAnonymously().then(()=>{window._authOk=true;console.log('anon auth ready');}).catch(e=>{window._authOk=false;window._authError=e;console.warn('anon auth:',e);}):Promise.resolve());
 }catch(e){console.warn('Firebase init:',e);}
 </script>
 <style>
@@ -4248,6 +4251,11 @@ async function enterAccessCode(warnId){
     if(!firebase.apps.length)firebase.initializeApp(HF_CONFIG);
     db=firebase.database();
     if(window._authReady)await window._authReady;
+    if(window._authOk===false){
+      we.style.display='block';
+      we.textContent='Unable to verify your session with the network right now'+(window._authError&&window._authError.message?' ('+window._authError.message+')':'')+'. Please refresh the page and try again, or contact the administrator if this continues.';
+      return;
+    }
 
     // Real access-code redemption: look up the code the admin actually generated.
     const codeSnap=await db.ref('access_codes/'+code).once('value');
@@ -4300,6 +4308,10 @@ async function enterAccessCode(warnId){
   }catch(e){
     const msg=(e&&e.message)?e.message:'Unknown error — please try again or contact the administrator.';
     if(msg.includes('not found')||msg.includes('approved')){we.style.display='block';we.textContent=msg;}
+    else if(e&&(e.code==='PERMISSION_DENIED'||/permission_denied/i.test(msg))){
+      we.style.display='block';
+      we.textContent='The network refused this request due to a permissions issue on our end — this is not something you did wrong. Please try again shortly, or contact the administrator so they can check network access settings.';
+    }
     else{we.style.display='block';we.textContent='Cannot connect to network: '+msg;}
     throw e; // let the caller (real-auth step) know this failed
   }
@@ -6456,7 +6468,18 @@ function initFirebase(){
   db.ref('animals/'+wildlifeReg).on('value',snap=>{animals=snap.val()||{};renderAll();});
   db.ref('config/adminPin').once('value',snap=>{if(snap.val())adminPinHash=snap.val();});
   };
-  try{ if(typeof firebase!=='undefined'&&firebase.auth){ firebase.auth().signInAnonymously().then(_run).catch(e=>{console.warn('anon auth failed:',e);_run();}); } else { _run(); } }catch(e){ _run(); }
+  // signInAnonymously() REPLACES the current session with a brand-new anonymous one even
+  // when a real, non-anonymous user is already signed in — it is not a safe no-op. launch()
+  // calls initFirebase() on every entry path, including right after doLogin()'s genuine
+  // signInWithEmailAndPassword() succeeds, so the real session was being silently clobbered
+  // a moment after login completed. Only fall back to anonymous auth here if nobody is
+  // signed in yet — never downgrade an existing real session.
+  try{
+    const _existingUser=(typeof firebase!=='undefined'&&firebase.auth)?firebase.auth().currentUser:null;
+    if(_existingUser&&!_existingUser.isAnonymous){ _run(); }
+    else if(typeof firebase!=='undefined'&&firebase.auth){ firebase.auth().signInAnonymously().then(_run).catch(e=>{console.warn('anon auth failed:',e);_run();}); }
+    else { _run(); }
+  }catch(e){ _run(); }
 }
 
 // ═══════════════════════════════════════════════════
