@@ -1,7 +1,4 @@
 # Habi-Food Netlify configuration
-# Prevents false-positive "exposed secret" warnings for Firebase API keys
-# Firebase web API keys are public by design — security is enforced by Firebase Security Rules
-
 [build]
   publish = "."
 
@@ -11,9 +8,3 @@
     X-Content-Type-Options = "nosniff"
     X-Frame-Options = "DENY"
     Referrer-Policy = "strict-origin-when-cross-origin"
-
-# Ignore the Firebase API key in secret scanning (it's a public key, not a secret)
-[[plugins]]
-  package = "@netlify/plugin-secrets-scanning"
-  [plugins.inputs]
-    ignore = ["AIzaSyB7kQy3ZaDV-aXLiTsKL6qydf9said7yRs"]
