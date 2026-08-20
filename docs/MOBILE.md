@@ -272,20 +272,49 @@ works inside the Capacitor WebView today — no extra registration needed, and n
 `google-services.json` required, because nothing here uses a native Firebase
 SDK.
 
-Two things to do in the Firebase console before the Android build is used in
-anger:
+### Authorised domains — nothing to add
 
-1. **Authorised domains.** Firebase Auth checks the origin. A Capacitor WebView
-   is `https://localhost` on Android and `capacitor://localhost` on iOS, not
-   your web domain. Add both under **Authentication → Settings → Authorised
-   domains**, or anonymous sign-in fails on device while working fine on the
-   web.
-2. **Register the Android app** — only needed if you later add native Firebase
-   features (push notifications, Crashlytics, Analytics). **Project settings →
-   Add app → Android**, package name `au.com.habifood.app`, then drop the
-   generated `google-services.json` into `android/app/` and add the
-   `google-services` Gradle plugin. Skip this entirely while the app uses the
-   JS SDK only.
+**Authentication → Settings → Authorised domains takes bare hostnames, not
+URLs.** `capacitor://localhost` cannot be entered there and the console is right
+to refuse it.
+
+It does not need to be. That list gates only the **redirect and popup OAuth
+flows** (`signInWithRedirect`, `signInWithPopup`), where Firebase has to verify
+the origin hosting the OAuth handler. The mobile build does not use them — it
+calls `signInAnonymously()`, which is a direct HTTPS request to
+`identitytoolkit.googleapis.com` carrying the API key, with no origin check.
+Nor does the mobile build need `localhost` added by hand: every Firebase project
+authorises it by default, and Capacitor's Android origin is `https://localhost`
+— hostname `localhost` — anyway.
+
+The desktop build *does* use `signInWithPopup` with Google, but it runs on your
+real web domain, which is already on the list. Leave it alone.
+
+If mobile ever needs Google sign-in, do not try to authorise a custom scheme:
+use native sign-in (`@capacitor-firebase/authentication`), which goes through
+the platform account picker and returns a credential to exchange, sidestepping
+the web redirect entirely.
+
+### What can actually block the app on device
+
+Not the domain list — **API key restrictions**, which live in the Google Cloud
+console rather than the Firebase one. If the web API key has been restricted by
+HTTP referrer, requests from the WebView's `https://localhost` origin are
+rejected and sign-in fails on device while working fine on the web.
+
+Check **Google Cloud console → APIs & Services → Credentials →** the browser key
+for `habifood-network`. If *Application restrictions* is set to *HTTP referrers*,
+either add `https://localhost/*` or set it to *None* — the key is public by
+design and access is enforced by Security Rules, so the referrer list buys
+little and breaks the packaged app.
+
+### Registering a native Android app
+
+Only needed if you later add native Firebase features (push notifications,
+Crashlytics, Analytics). **Project settings → Add app → Android**, package name
+`au.com.habifood.app`, then drop the generated `google-services.json` into
+`android/app/` and add the `google-services` Gradle plugin. Skip it entirely
+while the app uses the JS SDK only.
 
 Security rules are unchanged: the app signs in anonymously and reads
 `animals/{licence}`, `browse_spots/{licence}`, `access_codes/{code}` and
