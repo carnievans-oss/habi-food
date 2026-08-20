@@ -1,6 +1,23 @@
 # Habi-Food Netlify configuration
+#
+# Two builds ship from this one repository and they stay separate:
+#   /       → the desktop web app (index.html at the repo root)
+#   /m/     → the mobile web build (mobile-dist/), the same files Capacitor
+#             packages into the Android app
 [build]
   publish = "."
+
+# Friendly entry point for the mobile build. The Android app loads these files
+# from its own bundle; this URL is for phones on the web and for testing.
+[[redirects]]
+  from = "/m"
+  to = "/mobile-dist/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/m/*"
+  to = "/mobile-dist/:splat"
+  status = 200
 
 [[headers]]
   for = "/*"
@@ -8,3 +25,9 @@
     X-Content-Type-Options = "nosniff"
     X-Frame-Options = "DENY"
     Referrer-Policy = "strict-origin-when-cross-origin"
+
+# The web manifest must be served with the right type for "Add to home screen".
+[[headers]]
+  for = "/mobile-dist/manifest.webmanifest"
+  [headers.values]
+    Content-Type = "application/manifest+json; charset=utf-8"
