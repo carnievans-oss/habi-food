@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <!-- viewport-fit=cover lets the layout reach under the notch and home indicator;
      the safe-area insets in css/native.css put the content back where it belongs.
-     user-scalable=no is deliberate: this is an app shell, and pinch-zooming
-     chrome is not something a native app does. Body text is 15-16px throughout
-     so nothing needs zooming to read. -->
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no, maximum-scale=1">
+     Zoom is deliberately NOT blocked: user-scalable=no would deny a low-vision
+     carer the last resort of pinching in, and the layout reflows to 200% text
+     without clipping (every size is in rem). -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light">
-<meta name="theme-color" content="#1e4d34">
+<meta name="theme-color" content="#1b553a">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -42,10 +42,10 @@
 <!-- App bar -->
 <header id="hf-appbar">
   <div class="bar">
-    <span class="text-[22px] leading-none">🌿</span>
+    <span class="text-title-lg leading-none">🌿</span>
     <span class="flex-1 min-w-0">
-      <span id="hf-title" class="block font-display font-black text-[17px] text-euca leading-tight truncate">Habi-Food</span>
-      <span id="hf-sub" class="block text-[11.5px] text-muted leading-tight truncate"></span>
+      <span id="hf-title" class="block font-display font-black text-title-sm text-primary leading-tight truncate">Habi-Food</span>
+      <span id="hf-sub" class="block text-label-sm text-on-surface-variant leading-tight truncate"></span>
     </span>
   </div>
   <div id="hf-offline">Offline — showing saved data. Changes will sync when you have signal.</div>
@@ -68,8 +68,8 @@
     <div class="hf-sheet-head">
       <div class="flex items-start gap-2">
         <div class="flex-1 min-w-0">
-          <h2 id="hf-sheet-title" class="font-display font-black text-[18px] text-euca leading-tight"></h2>
-          <p id="hf-sheet-sub" class="text-[12.5px] text-muted leading-tight mt-0.5"></p>
+          <h2 id="hf-sheet-title" class="font-display font-black text-title text-primary leading-tight"></h2>
+          <p id="hf-sheet-sub" class="text-label text-on-surface-variant leading-tight mt-0.5"></p>
         </div>
         <button class="hf-btn-ghost px-3" onclick="HFApp.closeSheet()" aria-label="Close">✕</button>
       </div>

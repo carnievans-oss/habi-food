@@ -39,6 +39,11 @@
     return c ? (c.icon + ' ' + c.label) : String(id || '').replace(/_/g, ' ');
   }
 
+  /** Impact level -> pill variant (each variant carries its own glyph). */
+  function impactVariant(impact) {
+    return impact === 'high' ? 'alert' : (impact === 'medium' ? 'warn' : 'mute');
+  }
+
   function collectedLabel(iso) {
     return iso ? 'Last collected ' + U.since(iso) : 'Never collected';
   }
@@ -46,7 +51,7 @@
   /** One-line intro under the app bar. The app bar already carries the title,
       so screens never repeat it as a heading. */
   function intro(text) {
-    return '<p class="text-[13px] text-muted leading-snug px-1 mb-4">' + text + '</p>';
+    return '<p class="text-label text-on-surface-variant leading-snug px-1 mb-4 max-w-[62ch]">' + text + '</p>';
   }
 
   /* ═══ LOGIN ═══════════════════════════════════════════════════ */
@@ -54,24 +59,30 @@
     return screen(
       '<div class="pt-2 pb-6">' +
         '<div class="text-center mb-7">' +
-          '<div class="text-[44px] leading-none mb-2">🌿</div>' +
-          '<h1 class="font-display text-[26px] font-black text-euca leading-tight">Habi-Food</h1>' +
-          '<p class="text-[14px] text-muted mt-1">Australia\'s wildlife carer network</p>' +
+          '<div class="text-[2.75rem] leading-none mb-2">🌿</div>' +
+          '<h1 class="font-display text-display font-black text-primary leading-tight">Habi-Food</h1>' +
+          '<p class="text-body-sm text-on-surface-variant mt-1">Australia\'s wildlife carer network</p>' +
         '</div>' +
 
         '<section class="hf-card mb-3">' +
           '<label class="hf-label" for="lg-name">Your name</label>' +
-          '<input id="lg-name" class="hf-field mb-3" autocomplete="name" enterkeyhint="next" placeholder="Jane Carer">' +
+          '<input id="lg-name" class="hf-field mb-3" type="text" name="name" autocomplete="name" ' +
+            'inputmode="text" enterkeyhint="next" placeholder="Jane Carer">' +
           '<label class="hf-label" for="lg-lic">DEECA licence number</label>' +
-          '<input id="lg-lic" class="hf-field mb-3" autocapitalize="characters" autocorrect="off" spellcheck="false" enterkeyhint="next" placeholder="e.g. 10001234">' +
+          '<input id="lg-lic" class="hf-field mb-3" type="text" name="username" autocomplete="username" ' +
+            'autocapitalize="characters" autocorrect="off" spellcheck="false" ' +
+            'inputmode="numeric" enterkeyhint="next" placeholder="e.g. 10001234">' +
           '<label class="hf-label" for="lg-code">Access code</label>' +
-          '<input id="lg-code" class="hf-field" autocapitalize="characters" autocorrect="off" spellcheck="false" enterkeyhint="go" placeholder="Issued by your administrator">' +
-          '<p id="lg-warn" class="hidden text-[13px] text-danger leading-snug mt-3"></p>' +
+          '<input id="lg-code" class="hf-field" type="text" name="one-time-code" autocomplete="one-time-code" ' +
+            'autocapitalize="characters" autocorrect="off" spellcheck="false" ' +
+            'enterkeyhint="go" placeholder="Issued by your administrator" ' +
+            'aria-describedby="lg-warn">' +
+          '<p id="lg-warn" class="hidden text-label text-error leading-snug mt-3" role="alert"></p>' +
           '<button id="lg-go" class="hf-btn-primary hf-btn-block mt-4" onclick="HFApp.doLogin()">Sign in</button>' +
         '</section>' +
 
         '<button class="hf-btn-secondary hf-btn-block" onclick="HFApp.doDemo()">Try demo mode</button>' +
-        '<p class="text-[12px] text-muted text-center leading-relaxed mt-4 px-2">' +
+        '<p class="text-label-sm text-on-surface-variant text-center leading-relaxed mt-4 px-2">' +
           'Demo mode runs entirely on this device with six sample Victorian animals. ' +
           'No network needed, nothing is written to the carer network.' +
         '</p>' +
@@ -93,12 +104,13 @@
 
     const head =
       '<div class="px-1 mb-4">' +
-        '<p class="text-[13px] text-muted">' + esc(new Date().toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long' })) + '</p>' +
-        '<h1 class="font-display text-[24px] font-black text-euca leading-tight">' +
+        '<p class="text-label text-on-surface-variant">' + esc(new Date().toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long' })) + '</p>' +
+        '<h1 class="font-display text-headline font-black text-primary leading-tight">' +
           greeting() + ', ' + esc((s.name || '').split(' ')[0] || 'carer') +
         '</h1>' +
-        (s.demo ? '<span class="hf-pill-mute mt-2">Demo mode — sample data</span>' : '') +
-        (queued ? '<span class="hf-pill-warn mt-2 ml-1">' + queued + ' change' + (queued === 1 ? '' : 's') + ' waiting to sync</span>' : '') +
+        (s.demo ? '<span class="block mt-2 max-w-full">' + U.pill('mute', 'Demo mode — sample data') + '</span>' : '') +
+        (queued ? '<span class="block mt-2 max-w-full">' +
+          U.pill('warn', queued + ' change' + (queued === 1 ? '' : 's') + ' waiting to sync') + '</span>' : '') +
       '</div>';
 
     const stats =
@@ -122,14 +134,14 @@
           icon: '🌿',
           title: esc(n.item),
           sub: n.animals.map((a) => esc(a.ref)).join(' · '),
-          right: '<span class="hf-pill-ok">' + n.animals.length + '</span>',
+          right: U.pill('ok', n.animals.length),
         })).join('');
       collect = U.card('Collect today',
         '<div class="hf-list">' + rows + '</div>' +
         (needs.length > 4
           ? '<button class="hf-btn-ghost hf-btn-block mt-2" onclick="HFApp.go(\'browse\')">See all ' + needs.length + ' items</button>'
           : ''),
-        '<span class="hf-pill-ok">' + care.length + ' animal' + (care.length === 1 ? '' : 's') + '</span>');
+        U.pill('ok', care.length + ' animal' + (care.length === 1 ? '' : 's')));
     }
 
     const alertCard = alerts.length
@@ -140,17 +152,16 @@
             sub: esc(a.meta || a.body).slice(0, 90),
             tap: "HFApp.go('alerts')",
           })).join('') + '</div>',
-          '<span class="hf-pill-alert">' + alerts.length + '</span>')
+          U.pill('alert', alerts.length))
       : '';
 
     const eventCard = next
       ? U.card('Next in the landscape',
-          '<p class="text-[15px] font-bold text-ink leading-snug">' + esc(next.title) + '</p>' +
-          '<p class="text-[13px] text-muted mt-1 leading-snug">' + esc(next.location || '') + '</p>' +
+          '<p class="text-body font-bold text-on-surface leading-snug">' + esc(next.title) + '</p>' +
+          '<p class="text-label text-on-surface-variant mt-1 leading-snug">' + esc(next.location || '') + '</p>' +
           '<div class="flex items-center gap-2 mt-3">' +
-            '<span class="' + (next.impact === 'high' ? 'hf-pill-alert' : next.impact === 'medium' ? 'hf-pill-warn' : 'hf-pill-mute') + '">' +
-              esc(next.impact) + ' impact</span>' +
-            '<span class="hf-pill-info">' + U.relDays(next.daysOut) + '</span>' +
+            U.pill(impactVariant(next.impact), esc(next.impact) + ' impact') +
+            U.pill('info', U.relDays(next.daysOut)) +
           '</div>' +
           '<button class="hf-btn-secondary hf-btn-block mt-3" onclick="HFApp.openEvent(0)">What to prepare</button>')
       : '';
@@ -169,7 +180,7 @@
           icon: '🌿',
           title: esc(n.item),
           sub: n.animals.map((a) => esc(a.ref) + ' · ' + esc(a.species)).join('<br>'),
-          right: '<span class="hf-pill-ok">' + n.animals.length + '</span>',
+          right: U.pill('ok', n.animals.length),
           tap: 'HFApp.openNeed(' + i + ')',
         })).join('') + '</div>'
       : U.empty('Nothing to cut today. Browse needs appear here as animals move past the formula stage.');
@@ -191,26 +202,45 @@
       intro('What to cut today, and where you cut it last time.') +
       U.card('Cut list', cut) +
       U.card('Saved spots', spotRows,
-        '<span class="hf-pill-mute">' + spots.length + '</span>') +
+        U.pill('mute', spots.length)) +
       '<button class="hf-btn-primary hf-btn-block mb-2" onclick="HFApp.saveHere()">📍 Save this spot</button>' +
-      '<p class="text-[12px] text-muted text-center leading-relaxed px-3 mb-2">' +
+      '<p class="text-label-sm text-on-surface-variant text-center leading-relaxed px-3 mb-2">' +
         'Uses your current location. Works offline — spots sync to the network next time you have signal.' +
       '</p>'
     );
   }
 
   /* ═══ MAP ═════════════════════════════════════════════════════ */
+  /* Marker vocabulary. Each kind differs by SHAPE as well as tone, so the map
+     is readable in greyscale and to a colour-blind carer; every fill clears
+     3:1 against the map ground, and the white ring keeps it off the tiles. */
+  const MARKERS = {
+    spot:    { color: '#1b553a', shape: 'circle',   label: 'Browse spot' },
+    release: { color: '#4a7a2c', shape: 'diamond',  label: 'Release site' },
+    rescue:  { color: '#985e06', shape: 'triangle', label: 'Rescue location' },
+  };
+
+  /** Inline SVG for a marker kind, at `size` px. Used on the map and legend. */
+  function markerSvg(kind, size) {
+    const m = MARKERS[kind];
+    const s = size || 18;
+    const half = s / 2;
+    const body = {
+      circle:   '<circle cx="' + half + '" cy="' + half + '" r="' + (half - 2) + '"/>',
+      diamond:  '<polygon points="' + half + ',1 ' + (s - 1) + ',' + half + ' ' + half + ',' + (s - 1) + ' 1,' + half + '"/>',
+      triangle: '<polygon points="' + half + ',1 ' + (s - 1) + ',' + (s - 1) + ' 1,' + (s - 1) + '"/>',
+    }[m.shape];
+    return '<svg width="' + s + '" height="' + s + '" viewBox="0 0 ' + s + ' ' + s + '" ' +
+      'fill="' + m.color + '" stroke="#ffffff" stroke-width="2" aria-hidden="true" ' +
+      'style="display:block;filter:drop-shadow(0 1px 2px rgba(0,0,0,.4))">' + body + '</svg>';
+  }
+
   function mapShell() {
-    // A legend, because three colours of dot mean nothing without one.
-    const key = [
-      ['#256b45', 'Browse spot'],
-      ['#a7c957', 'Release site'],
-      ['#c87a00', 'Rescue'],
-    ].map(([c, l]) =>
-      '<span class="flex items-center gap-1.5">' +
-        '<span style="width:9px;height:9px;border-radius:50%;background:' + c + ';border:1.5px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.12)"></span>' +
-        l +
-      '</span>').join('');
+    // A legend, because three kinds of marker mean nothing without one. It
+    // repeats the shape, not just the colour.
+    const key = Object.keys(MARKERS).map((k) =>
+      '<span class="flex items-center gap-1.5">' + markerSvg(k, 14) + MARKERS[k].label + '</span>'
+    ).join('');
 
     return '<div id="hf-map"></div>' +
       '<div class="hf-map-legend">' + key + '</div>' +
@@ -247,13 +277,12 @@
     refreshMarkers();
   }
 
-  function dot(color, label) {
+  function markerIcon(kind) {
     return global.L.divIcon({
       className: '',
-      html: '<div style="width:16px;height:16px;border-radius:50%;background:' + color +
-            ';border:2.5px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.35)" title="' + label + '"></div>',
-      iconSize: [16, 16],
-      iconAnchor: [8, 8],
+      html: markerSvg(kind, 20),
+      iconSize: [20, 20],
+      iconAnchor: [10, 10],
     });
   }
 
@@ -265,7 +294,7 @@
     Data.spotList().forEach((s) => {
       if (s.lat == null || s.lng == null) return;
       bounds.push([s.lat, s.lng]);
-      global.L.marker([s.lat, s.lng], { icon: dot('#256b45', 'Browse spot') })
+      global.L.marker([s.lat, s.lng], { icon: markerIcon('spot'), title: 'Browse spot — ' + (s.address || '') })
         .addTo(state.layer)
         .on('click', () => global.HFApp.openSpot(s.id));
     });
@@ -274,14 +303,14 @@
       const r = a.release;
       if (r && r.lat != null) {
         bounds.push([r.lat, r.lng]);
-        global.L.marker([r.lat, r.lng], { icon: dot('#a7c957', 'Release site') })
+        global.L.marker([r.lat, r.lng], { icon: markerIcon('release'), title: 'Release site — ' + (a.animalRef || a.id) })
           .addTo(state.layer)
           .on('click', () => global.HFApp.openAnimal(a.id));
       }
       const i = a.intake;
       if (i && i.lat != null) {
         bounds.push([i.lat, i.lng]);
-        global.L.marker([i.lat, i.lng], { icon: dot('#c87a00', 'Rescue location') })
+        global.L.marker([i.lat, i.lng], { icon: markerIcon('rescue'), title: 'Rescue location — ' + (a.animalRef || a.id) })
           .addTo(state.layer)
           .on('click', () => global.HFApp.openAnimal(a.id));
       }
@@ -289,7 +318,7 @@
 
     if (state.here) {
       global.L.circleMarker([state.here.lat, state.here.lng], {
-        radius: 7, color: '#2b6cb0', fillColor: '#2b6cb0', fillOpacity: 0.9, weight: 3,
+        radius: 8, color: '#ffffff', fillColor: '#2d6eb4', fillOpacity: 1, weight: 3,
       }).addTo(state.layer);
     }
     if (bounds.length > 1) {
@@ -308,10 +337,10 @@
           title: esc(a.title),
           // Contact and timing sit under the label, not beside it — a phone row
           // has one column of usable width, and the label owns it.
-          sub: esc(a.body) + (a.meta ? '<br><b class="text-ink2">' + esc(a.meta) + '</b>' : ''),
+          sub: esc(a.body) + (a.meta ? '<br><b class="text-on-surface-variant">' + esc(a.meta) + '</b>' : ''),
           right: a.kind === 'event'
-            ? '<span class="' + (a.severity === 'alert' ? 'hf-pill-alert' : 'hf-pill-warn') + '">' + esc(a.severity === 'alert' ? 'Soon' : 'Ahead') + '</span>'
-            : '<span class="hf-pill-alert">Missing</span>',
+            ? U.pill(a.severity === 'alert' ? 'alert' : 'warn', a.severity === 'alert' ? 'Soon' : 'Ahead')
+            : U.pill('alert', 'Missing'),
           tap: a.kind === 'animal' ? "HFApp.openAnimal('" + esc(a.animalId) + "')" : 'HFApp.openEventById(' + i + ')',
         })).join('') + '</div>'
       : U.empty('Nothing needs your attention right now.');
@@ -321,7 +350,7 @@
           icon: e.type === 'burn' ? '🔥' : e.type === 'clear' ? '🪓' : e.type === 'arbo' ? '🌳' : '🚜',
           title: esc(e.title),
           sub: esc(e.location || ''),
-          right: '<span class="' + (e.impact === 'high' ? 'hf-pill-alert' : e.impact === 'medium' ? 'hf-pill-warn' : 'hf-pill-mute') + '">' + U.relDays(e.daysOut) + '</span>',
+          right: U.pill(impactVariant(e.impact), U.relDays(e.daysOut)),
           tap: 'HFApp.openEvent(' + i + ')',
         })).join('') + '</div>'
       : U.empty('No scheduled works in the next two months.');
@@ -353,7 +382,7 @@
       : U.empty('No animals in care.');
 
     return screen(
-      U.card('In care', animalRows, '<span class="hf-pill-mute">' + care.length + '</span>') +
+      U.card('In care', animalRows, U.pill('mute', care.length)) +
 
       U.card('Account',
         '<div class="hf-list">' +
@@ -373,13 +402,13 @@
         (s.demo ? '' : '<button class="hf-btn-secondary hf-btn-block mt-2" onclick="HFApp.syncNow()">Sync now</button>')) +
 
       U.card('About',
-        '<p class="text-[14px] text-ink2 leading-relaxed">Habi-Food mobile ' + esc(global.HF_CFG.version) +
+        '<p class="text-body-sm text-on-surface-variant leading-relaxed">Habi-Food mobile ' + esc(global.HF_CFG.version) +
         ' · ' + esc(global.HFNative.platform) + ' build.</p>' +
-        '<p class="text-[13px] text-muted leading-relaxed mt-2">' +
+        '<p class="text-label text-on-surface-variant leading-relaxed mt-2">' +
         'Licensed wildlife rehabilitator network, Victoria. The full desktop site carries intake, ' +
         'release records, reporting and admin — this app covers field work.</p>') +
 
-      '<button class="hf-btn-secondary hf-btn-block mt-1 text-danger" onclick="HFApp.doSignOut()">Sign out</button>' +
+      '<button class="hf-btn-secondary hf-btn-block mt-1 text-error" onclick="HFApp.doSignOut()">Sign out</button>' +
       '<div class="h-2"></div>'
     );
   }
@@ -393,12 +422,12 @@
     const next = global.HF_DOMAIN.STAGE_ORDER[nextIdx];
 
     return '<div class="flex items-center gap-2 mb-3 flex-wrap">' +
-        '<span class="hf-pill-ok">' + esc(st.label) + '</span>' +
-        '<span class="hf-pill-mute">' + esc(statusLabel(a)) + '</span>' +
-        (a.intake && a.intake.cause ? '<span class="hf-pill-mute">' + esc(causeLabel(a.intake.cause)) + '</span>' : '') +
+        U.pill('ok', esc(st.label)) +
+        U.pill('mute', esc(statusLabel(a))) +
+        (a.intake && a.intake.cause ? U.pill('mute', esc(causeLabel(a.intake.cause))) : '') +
       '</div>' +
-      '<p class="text-[14px] text-ink2 leading-relaxed selectable mb-3">' + esc(st.note || '') + '</p>' +
-      (a.browseNote ? '<div class="hf-card mb-3 selectable"><p class="text-[14px] text-ink2 leading-relaxed">📝 ' + esc(a.browseNote) + '</p></div>' : '') +
+      '<p class="text-body-sm text-on-surface-variant leading-relaxed selectable mb-3">' + esc(st.note || '') + '</p>' +
+      (a.browseNote ? '<div class="hf-card mb-3 selectable"><p class="text-body-sm text-on-surface-variant leading-relaxed">📝 ' + esc(a.browseNote) + '</p></div>' : '') +
 
       '<div class="hf-section">Browse required now</div>' +
       (needs.length
@@ -414,46 +443,46 @@
       (next
         ? '<button class="hf-btn-primary hf-btn-block mt-2" onclick="HFApp.advance(\'' + esc(a.id) + '\')">' +
             'Advance to ' + esc(global.HF_DOMAIN.BROWSE_STAGES[next].label) + '</button>'
-        : '<p class="text-[13px] text-muted text-center mt-2">Final browse stage — ready for release planning.</p>');
+        : '<p class="text-label text-on-surface-variant text-center mt-2">Final browse stage — ready for release planning.</p>');
   }
 
   function spotSheet(s) {
     const dist = U.km(state.here, s);
     return '<div class="flex items-center gap-2 mb-3 flex-wrap">' +
-        '<span class="hf-pill-ok">' + collectedLabel(s.lastCollected) + '</span>' +
-        (dist != null ? '<span class="hf-pill-info">' + dist.toFixed(1) + ' km away</span>' : '') +
+        U.pill('ok', collectedLabel(s.lastCollected)) +
+        (dist != null ? U.pill('info', dist.toFixed(1) + ' km away') : '') +
       '</div>' +
-      (s.notes ? '<p class="text-[14px] text-ink2 leading-relaxed selectable mb-3">' + esc(s.notes) + '</p>' : '') +
+      (s.notes ? '<p class="text-body-sm text-on-surface-variant leading-relaxed selectable mb-3">' + esc(s.notes) + '</p>' : '') +
       '<div class="hf-list mb-3">' +
         U.row({ icon: '🧭', title: 'Coordinates', sub: Number(s.lat).toFixed(5) + ', ' + Number(s.lng).toFixed(5) }) +
         U.row({ icon: '📅', title: 'Saved', sub: U.dateAU(s.saved) }) +
       '</div>' +
       '<button class="hf-btn-primary hf-btn-block mb-2" onclick="HFApp.collect(\'' + esc(s.id) + '\')">✓ Mark collected today</button>' +
       '<button class="hf-btn-secondary hf-btn-block mb-2" onclick="HFApp.directions(' + s.lat + ',' + s.lng + ')">🚗 Directions</button>' +
-      '<button class="hf-btn-ghost hf-btn-block text-danger" onclick="HFApp.removeSpot(\'' + esc(s.id) + '\')">Remove spot</button>';
+      '<button class="hf-btn-ghost hf-btn-block text-error" onclick="HFApp.removeSpot(\'' + esc(s.id) + '\')">Remove spot</button>';
   }
 
   function eventSheet(e) {
     const prep = (e.prep || []).map((p) => U.row({ icon: '▪️', title: esc(p) })).join('');
     const species = (e.species || []).map((sp) => U.row({ icon: '🐾', title: esc(sp) })).join('');
     return '<div class="flex items-center gap-2 mb-3 flex-wrap">' +
-        '<span class="' + (e.impact === 'high' ? 'hf-pill-alert' : e.impact === 'medium' ? 'hf-pill-warn' : 'hf-pill-mute') + '">' + esc(e.impact) + ' impact</span>' +
-        '<span class="hf-pill-info">' + U.relDays(e.daysOut) + '</span>' +
-        (e.area_ha ? '<span class="hf-pill-mute">' + esc(e.area_ha) + ' ha</span>' : '') +
+        U.pill(impactVariant(e.impact), esc(e.impact) + ' impact') +
+        U.pill('info', U.relDays(e.daysOut)) +
+        (e.area_ha ? U.pill('mute', esc(e.area_ha) + ' ha') : '') +
       '</div>' +
-      '<p class="text-[14px] text-ink2 leading-relaxed selectable mb-3">' + esc(e.location || '') + '</p>' +
+      '<p class="text-body-sm text-on-surface-variant leading-relaxed selectable mb-3">' + esc(e.location || '') + '</p>' +
       (species ? '<div class="hf-section">Species at risk</div><div class="hf-list mb-3">' + species + '</div>' : '') +
       (prep ? '<div class="hf-section">Prepare</div><div class="hf-list mb-3">' + prep + '</div>' : '');
   }
 
   function needSheet(n) {
-    return '<p class="text-[15px] font-bold text-ink leading-snug selectable mb-3">' + esc(n.item) + '</p>' +
+    return '<p class="text-body font-bold text-on-surface leading-snug selectable mb-3">' + esc(n.item) + '</p>' +
       '<div class="hf-section">Needed by</div>' +
       '<div class="hf-list mb-3">' + n.animals.map((a) => U.row({
         icon: '🐾', title: esc(a.ref), sub: esc(a.species),
         tap: "HFApp.openAnimal('" + esc(a.id) + "')",
       })).join('') + '</div>' +
-      '<p class="text-[13px] text-muted leading-relaxed px-1">' +
+      '<p class="text-label text-on-surface-variant leading-relaxed px-1">' +
         'Cut fresh on the day where you can. Pre-release animals should get browse from ' +
         'as close to the planned release site as possible — scent acclimatisation improves survival.' +
       '</p>';

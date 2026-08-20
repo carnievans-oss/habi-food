@@ -15,6 +15,7 @@
   const Data = global.HFData;
   const S = global.HFScreens;
   const Native = global.HFNative;
+  const Store = global.HFStore;
 
   const TABS = [
     { id: 'today',  label: 'Today',  icon: '🏠' },
@@ -24,7 +25,13 @@
     { id: 'more',   label: 'More',   icon: '⋯' },
   ];
 
-  let tab = 'today';
+  // State_Preservation: the tab is part of where the carer was. Relaunching
+  // from Home, or coming back after the system reclaimed the process, returns
+  // them to the screen they were using rather than to the default one.
+  let tab = (function () {
+    const saved = global.HFStore.prefs().tab;
+    return TABS.some((t) => t.id === saved) ? saved : 'today';
+  })();
   let booted = false;
 
   function el(id) { return doc.getElementById(id); }
@@ -32,13 +39,18 @@
   /* ── chrome ───────────────────────────────────────────────────── */
   function renderTabBar() {
     const alertCount = Data.session() ? Data.alerts(S.state.animals).length : 0;
-    el('hf-tabbar').innerHTML = TABS.map((t) =>
-      '<button class="hf-tab" role="tab" aria-selected="' + (t.id === tab) + '" ' +
-        'aria-label="' + t.label + '" onclick="HFApp.go(\'' + t.id + '\')">' +
-        '<span class="ic">' + t.icon + '</span>' +
+    el('hf-tabbar').innerHTML = TABS.map((t) => {
+      const badged = t.id === 'alerts' && alertCount;
+      // The badge dot is decorative; the count goes into the accessible name so
+      // it is not carried by a coloured dot alone.
+      const name = t.label + (badged ? ', ' + alertCount + ' needing attention' : '');
+      return '<button class="hf-tab" role="tab" aria-selected="' + (t.id === tab) + '" ' +
+        'aria-label="' + name + '" onclick="HFApp.go(\'' + t.id + '\')">' +
+        '<span class="ic" aria-hidden="true">' + t.icon + '</span>' +
         '<span>' + t.label + '</span>' +
-        (t.id === 'alerts' && alertCount ? '<span class="dot"></span>' : '') +
-      '</button>').join('');
+        (badged ? '<span class="dot" aria-hidden="true"></span>' : '') +
+      '</button>';
+    }).join('');
   }
 
   function setTitle(text, sub) {
@@ -94,6 +106,7 @@
   function go(next) {
     if (next === tab && next !== 'map') { render(); return; }
     tab = next;
+    global.HFStore.setPref('tab', next);
     Native.tap('LIGHT');
     render();
   }
@@ -179,6 +192,21 @@
 
   /* Field actions */
   async function saveHere() {
+    // Permission_Rationale: say why the location is wanted BEFORE the system
+    // prompt appears, and only at the moment the carer asked to save a spot —
+    // never at startup. If they decline, everything else still works.
+    if (!Store.prefs().locationExplained && !(await Native.hasLocationPermission())) {
+      const go = await U.confirm(
+        'Save this spot',
+        'Habi-Food records where you are standing so you can find this tree again, ' +
+        'and so the spot can be shared as a collection point. Your location is stored ' +
+        'with your own records and is never used for anything else.',
+        'Continue'
+      );
+      if (!go) return;
+      Store.setPref('locationExplained', true);
+    }
+
     U.toast('Getting your location…');
     const pos = await Native.position();
     if (!pos) {

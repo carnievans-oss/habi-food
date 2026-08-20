@@ -1,5 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  FileProvider scope.
+
+  Capacitor's template grants <external-path path="."/> — the entire external
+  storage root — and the whole cache directory. Any URI this provider handed to
+  another app could then address any file on external storage.
+
+  This app shares no files at all today, so the grant is narrowed to a single
+  directory it owns. If sharing is added later (exporting a run sheet, say),
+  write the file into that directory and nothing else becomes reachable.
+-->
 <paths xmlns:android="http://schemas.android.com/apk/res/android">
-    <external-path name="my_images" path="." />
-    <cache-path name="my_cache_images" path="." />
+    <cache-path name="shared_exports" path="shared/" />
 </paths>

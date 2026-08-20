@@ -129,6 +129,24 @@
     },
   };
 
+  /**
+   * A yes/no dialog rendered in the sheet, resolving to true/false. Used where
+   * the app must explain itself before handing over to a system prompt.
+   */
+  function confirm(title, body, confirmLabel) {
+    return new Promise((resolve) => {
+      let answered = false;
+      const done = (v) => { if (!answered) { answered = true; resolve(v); } };
+      global.HFApp._confirmAnswer = (v) => { done(v); Sheet.close(); };
+      Sheet.open(esc(title),
+        '<p class="text-body text-on-surface leading-relaxed selectable mb-4">' + esc(body) + '</p>' +
+        '<button class="hf-btn-primary hf-btn-block mb-2" onclick="HFApp._confirmAnswer(true)">' +
+          esc(confirmLabel || 'Continue') + '</button>' +
+        '<button class="hf-btn-secondary hf-btn-block" onclick="HFApp._confirmAnswer(false)">Not now</button>',
+        { onClose: () => done(false) });
+    });
+  }
+
   /* ── pull to refresh ──────────────────────────────────────────── */
   /**
    * Standard mobile gesture: drag down at the top of the list to refresh.
@@ -176,6 +194,26 @@
   }
 
   /* ── small builders ───────────────────────────────────────────── */
+
+  /**
+   * Status pill. Colour alone never carries the status: each variant leads
+   * with its own glyph, so the same distinction survives greyscale, colour
+   * blindness, and a screenshot printed in black and white.
+   */
+  const PILL_GLYPH = {
+    ok: '\u25CF',      // ●  filled circle
+    warn: '\u25B2',    // ▲  triangle
+    alert: '\u25A0',   // ■  square
+    info: '\u25C6',    // ◆  diamond
+    mute: '\u25CB',    // ○  hollow circle
+  };
+  function pill(variant, label) {
+    const glyph = PILL_GLYPH[variant] || '';
+    return '<span class="hf-pill-' + variant + '">' +
+      (glyph ? '<span aria-hidden="true">' + glyph + '</span>' : '') +
+      '<span>' + label + '</span></span>';
+  }
+
   /**
    * A list row. Text wraps rather than truncating — a browse item like
    * "Eucalyptus viminalis — 10+ branchlets (EVC-matched to release site)" is
@@ -191,7 +229,7 @@
     const tag = opts.tap ? 'button' : 'div';
     const action = opts.tap ? ' onclick="' + opts.tap + '"' : '';
     return '<' + tag + ' class="hf-row items-start py-3"' + action + '>' +
-      (opts.icon ? '<span class="text-[19px] leading-none shrink-0 mt-0.5">' + opts.icon + '</span>' : '') +
+      (opts.icon ? '<span class="text-title leading-none shrink-0 mt-0.5">' + opts.icon + '</span>' : '') +
       '<span class="flex-1 min-w-0">' +
         '<span class="hf-row-title block">' + opts.title + '</span>' + sub +
       '</span>' +
@@ -210,6 +248,6 @@
   global.HFUI = {
     esc, relDays, since, dateAU, km,
     toast, Sheet, bindPullToRefresh,
-    row, card, empty,
+    row, card, empty, pill, confirm,
   };
 })(window);

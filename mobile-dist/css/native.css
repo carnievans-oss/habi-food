@@ -6,6 +6,15 @@
    Tailwind handles the visual system (css/tailwind.css); this handles the
    parts a utility class cannot express.
 
+   Accessibility rules that apply to every rule in this file:
+     · sizes are in rem, so text and the chrome around it grow together when
+       the platform text size is raised (Android maps the system font scale
+       onto the WebView in MainActivity; iOS and the web use the browser's
+       own text size);
+     · 0.75rem (12sp) is the smallest type anywhere, tab labels included;
+     · colours come from the tokens in css/app.tailwind.css, which are solved
+       for 4.5:1 (text) and 3:1 (boundaries and indicators).
+
    MOBILE ONLY. Nothing in this file may be linked from the desktop build.
    ═══════════════════════════════════════════════════════════════════ */
 
@@ -16,16 +25,70 @@
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-left: env(safe-area-inset-left, 0px);
   --safe-right: env(safe-area-inset-right, 0px);
-  --appbar-h: 3.5rem;
-  --tabbar-h: 3.75rem;
+
+  /* Chrome heights grow with the text — up to a ceiling. Past roughly 150%
+     the bars would eat a third of a phone screen and leave nothing for the
+     content the carer scaled the text up to read, so the chrome stops growing
+     while the type inside it keeps going. */
+  --appbar-h: min(3.5rem, 4.75rem);
+  --tabbar-h: min(3.75rem, 5rem);
+
+  /* Light scheme — same values as the Tailwind roles in css/app.tailwind.css.
+     Kept here for the rules Tailwind does not generate (chrome, sheet, map). */
+  --c-surface: #ffffff;
+  --c-page: #eef2ee;
+  --c-on-surface: #18251f;
+  --c-on-surface-variant: #577061;
+  --c-primary: #1b553a;
+  --c-primary-container: #e5f5ee;
+  --c-outline: #6c937c;
+  --c-outline-variant: #d3ded8;
+  --c-error: #be3b2d;
+  --c-warning: #985e06;
+  --c-warning-container: #f5efe5;
+  --c-scrim: rgba(6, 14, 10, 0.55);
+  --c-toast-bg: #12211a;
+  --c-toast-fg: #f2f8f4;
+  --c-map-ground: #e3eae5;
+  --ease-native: cubic-bezier(0.32, 0.72, 0, 1);
+
+  /* Longest comfortable measure. Material asks for 45-75 characters per line;
+     on a phone the screen enforces it, but in landscape, on a tablet, or in a
+     desktop window the column has to stop growing somewhere. */
+  --measure: 34rem;
 }
 
-html { -webkit-text-size-adjust: 100%; }
+@media (prefers-color-scheme: dark) {
+  :root {
+    --c-surface: #151917;
+    --c-page: #0d110f;
+    --c-on-surface: #e3ebe6;
+    --c-on-surface-variant: #adc2b5;
+    --c-primary: #6fd9a1;
+    --c-primary-container: #20402f;
+    --c-outline: #63796d;
+    --c-outline-variant: #333f39;
+    --c-error: #f0857a;
+    --c-warning: #e5a336;
+    --c-warning-container: #42371f;
+    --c-scrim: rgba(0, 0, 0, 0.66);
+    --c-toast-bg: #e3ebe6;
+    --c-toast-fg: #0d110f;
+    --c-map-ground: #212724;
+  }
+}
+
+/* Do NOT pin the root font size in px — that would freeze the type scale and
+   defeat the platform text-size setting. 100% follows it. */
+html {
+  font-size: 100%;
+  -webkit-text-size-adjust: 100%;
+}
 
 body {
   margin: 0;
-  background: var(--color-canvas, #eef2ee);
-  color: var(--color-ink, #1a2b1f);
+  background: var(--c-page);
+  color: var(--c-on-surface);
   font-family: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   /* A native app does not rubber-band its whole page or offer a text cursor
      on chrome, and never flashes a grey box on tap. */
@@ -42,6 +105,15 @@ body {
 /* Text the carer may genuinely want to copy — notes, addresses, phone numbers */
 .selectable, input, textarea { -webkit-user-select: text; user-select: text; }
 
+/* Keyboard and switch-control users need to see where they are. The ring is
+   drawn outside the element in the primary tone, over a white halo so it
+   stays visible on both the page and a card. */
+:focus-visible {
+  outline: 3px solid var(--c-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
 /* ── App bar ─────────────────────────────────────────────────────── */
 #hf-appbar {
   position: fixed;
@@ -50,17 +122,18 @@ body {
   padding-top: var(--safe-top);
   padding-left: max(var(--safe-left), 0px);
   padding-right: max(var(--safe-right), 0px);
-  background: rgba(255, 255, 255, 0.86);
-  backdrop-filter: saturate(180%) blur(14px);
-  -webkit-backdrop-filter: saturate(180%) blur(14px);
-  border-bottom: 1px solid var(--color-line, #dbe5dd);
+  /* Opaque, not translucent: text scrolling underneath a blurred bar changes
+     the effective background and with it the contrast ratio. A solid bar
+     keeps the measured 4.5:1 true at every scroll position. */
+  background: var(--c-surface);
+  border-bottom: 1px solid var(--c-outline);
 }
 #hf-appbar .bar {
-  height: var(--appbar-h);
+  min-height: var(--appbar-h);
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0 0.75rem;
+  padding: 0.375rem 0.75rem;
 }
 
 /* ── Scroll region ───────────────────────────────────────────────── */
@@ -80,8 +153,28 @@ body {
 /* The map screen takes the full region with no page padding of its own */
 #hf-scroll.is-map { padding: 0; overflow: hidden; }
 
+/* Adaptive width. The app stays single-column on every form factor — a phone
+   layout stretched into three columns on a tablet is not a tablet layout — but
+   the column stops at a readable measure and centres, instead of running text
+   to 120 characters in landscape or in a desktop window. */
+.hf-screen {
+  max-width: var(--measure);
+  margin-inline: auto;
+}
+#hf-appbar .bar,
+.hf-sheet-head,
+.hf-sheet-body {
+  max-width: var(--measure);
+  margin-inline: auto;
+  width: 100%;
+}
+#hf-tabbar {
+  justify-content: center;
+}
+.hf-tab { max-width: calc(var(--measure) / 5); }
+
 /* Screen transition — a short slide/fade reads as navigation, not a repaint */
-.hf-screen { animation: hf-in 220ms var(--ease-native, cubic-bezier(.32,.72,0,1)) both; }
+.hf-screen { animation: hf-in 220ms var(--ease-native) both; }
 @keyframes hf-in {
   from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: none; }
@@ -89,6 +182,7 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .hf-screen { animation: none; }
   #hf-scroll { scroll-behavior: auto; }
+  * { transition-duration: 1ms !important; animation-duration: 1ms !important; }
 }
 
 /* ── Tab bar ─────────────────────────────────────────────────────── */
@@ -100,40 +194,66 @@ body {
   padding-bottom: var(--safe-bottom);
   padding-left: max(var(--safe-left), 0px);
   padding-right: max(var(--safe-right), 0px);
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: saturate(180%) blur(14px);
-  -webkit-backdrop-filter: saturate(180%) blur(14px);
-  border-top: 1px solid var(--color-line, #dbe5dd);
+  background: var(--c-surface);
+  border-top: 1px solid var(--c-outline);
 }
 .hf-tab {
   flex: 1;
-  height: var(--tabbar-h);
+  /* Without min-width:0 a flex item refuses to shrink below its text, and at
+     200% the five labels pushed the last tab off the screen entirely. */
+  min-width: 0;
+  min-height: var(--tabbar-h);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  gap: 0.125rem;
+  padding: 0.375rem 0.125rem;
   border: 0;
   background: none;
   cursor: pointer;
-  color: var(--color-muted, #5f7a66);
-  font: 600 10.5px "Inter", system-ui, sans-serif;
-  letter-spacing: 0.02em;
+  color: var(--c-on-surface-variant);          /* 5.4:1 on the bar */
+  font: 600 0.75rem "Inter", system-ui, sans-serif;   /* 12sp floor */
+  letter-spacing: 0.01em;
   position: relative;
   transition: color 120ms linear;
 }
-.hf-tab .ic { font-size: 21px; line-height: 1; transition: transform 160ms var(--ease-native, cubic-bezier(.32,.72,0,1)); }
-.hf-tab[aria-selected="true"] { color: var(--color-forest, #256b45); }
-.hf-tab[aria-selected="true"] .ic { transform: translateY(-1px) scale(1.08); }
+/* The label keeps scaling; if it runs out of room it ellipsises rather than
+   shoving its neighbours off-screen. The full name stays in aria-label. */
+.hf-tab > span:not(.ic):not(.dot) {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* The selected tab is marked three ways — a filled indicator behind the icon,
+   a heavier label, and the primary tone — so it never depends on colour alone. */
+.hf-tab .ic {
+  /* Decorative: it scales with the text but stops at a cap, because an icon
+     is not what a low-vision user is trying to read — the label is. */
+  font-size: min(1.3125rem, 1.75rem);
+  line-height: 1;
+  padding: 0.125rem min(0.75rem, 1rem);
+  border-radius: 999px;
+  transition: background-color 160ms var(--ease-native), transform 160ms var(--ease-native);
+}
+.hf-tab[aria-selected="true"] { color: var(--c-primary); font-weight: 800; }
+.hf-tab[aria-selected="true"] .ic {
+  background: var(--c-primary-container);
+  box-shadow: inset 0 0 0 1px var(--c-outline);
+}
 .hf-tab:active .ic { transform: scale(0.92); }
+
+/* Unread marker: a dot plus the count is announced in the label, so the dot
+   is reinforcement rather than the only carrier. */
 .hf-tab .dot {
   position: absolute;
-  top: 8px;
-  margin-left: 20px;
-  width: 8px; height: 8px;
+  top: 0.4rem;
+  margin-left: 1.4rem;
+  width: 0.55rem; height: 0.55rem;
   border-radius: 50%;
-  background: var(--color-danger, #c0392b);
-  border: 2px solid #fff;
+  background: var(--c-error);
+  border: 2px solid var(--c-surface);
 }
 
 /* ── Bottom sheet ────────────────────────────────────────────────── */
@@ -141,7 +261,7 @@ body {
   position: fixed;
   inset: 0;
   z-index: 60;
-  background: rgba(10, 25, 15, 0.42);
+  background: var(--c-scrim);
   opacity: 0;
   pointer-events: none;
   transition: opacity 220ms linear;
@@ -155,25 +275,26 @@ body {
   max-height: 88vh;
   display: flex;
   flex-direction: column;
-  background: #fff;
+  background: var(--c-surface);
   border-radius: 1.25rem 1.25rem 0 0;
-  box-shadow: 0 -8px 40px rgba(10, 30, 18, 0.28);
+  border-top: 1px solid var(--c-outline);
+  box-shadow: 0 -8px 40px rgba(10, 30, 18, 0.3);
   transform: translateY(100%);
-  transition: transform 320ms var(--ease-native, cubic-bezier(.32,.72,0,1));
+  transition: transform 320ms var(--ease-native);
   padding-bottom: var(--safe-bottom);
 }
 #hf-sheet.open { transform: translateY(0); }
 #hf-sheet.dragging { transition: none; }        /* follow the finger 1:1 */
 .hf-sheet-grip {
-  width: 38px; height: 4px;
+  width: 2.375rem; height: 0.25rem;
   border-radius: 2px;
-  background: #cfdcd3;
-  margin: 9px auto 4px;
+  background: var(--c-outline);                 /* 3.4:1 — a real handle */
+  margin: 0.5625rem auto 0.25rem;
   flex: none;
 }
 .hf-sheet-head {
-  padding: 4px 1rem 0.75rem;
-  border-bottom: 1px solid var(--color-line, #dbe5dd);
+  padding: 0.25rem 1rem 0.75rem;
+  border-bottom: 1px solid var(--c-outline-variant);
   flex: none;
 }
 .hf-sheet-body {
@@ -195,13 +316,13 @@ body {
   max-width: min(92vw, 26rem);
   padding: 0.7rem 1rem;
   border-radius: 0.875rem;
-  background: rgba(26, 43, 31, 0.95);
-  color: #f2f8f4;
-  font: 500 14px "Inter", system-ui, sans-serif;
+  background: var(--c-toast-bg);          /* inverted surface, 15:1 either way */
+  color: var(--c-toast-fg);
+  font: 500 0.875rem "Inter", system-ui, sans-serif;
   line-height: 1.4;
   text-align: center;
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.3);
-  transition: opacity 200ms linear, transform 240ms var(--ease-native, cubic-bezier(.32,.72,0,1));
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+  transition: opacity 200ms linear, transform 240ms var(--ease-native);
 }
 #hf-toast.show { opacity: 1; transform: translate(-50%, 0); }
 
@@ -216,14 +337,15 @@ body {
   justify-content: center;
   height: 0;
   overflow: hidden;
-  color: var(--color-muted, #5f7a66);
-  font: 600 12px "Inter", system-ui, sans-serif;
+  background: var(--c-page);
+  color: var(--c-on-surface-variant);
+  font: 600 0.75rem "Inter", system-ui, sans-serif;
 }
 #hf-ptr .spin {
-  width: 16px; height: 16px;
-  margin-right: 8px;
-  border: 2px solid #cfdcd3;
-  border-top-color: var(--color-forest, #256b45);
+  width: 1rem; height: 1rem;
+  margin-right: 0.5rem;
+  border: 2px solid var(--c-outline);
+  border-top-color: var(--c-primary);
   border-radius: 50%;
 }
 #hf-ptr.busy .spin { animation: hf-spin 700ms linear infinite; }
@@ -232,11 +354,11 @@ body {
 /* ── Offline banner ──────────────────────────────────────────────── */
 #hf-offline {
   display: none;
-  padding: 6px 12px;
-  background: #fdf3e0;
-  border-bottom: 1px solid #f0dcb4;
-  color: #8a5a00;
-  font: 600 12px "Inter", system-ui, sans-serif;
+  padding: 0.375rem 0.75rem;
+  background: var(--c-warning-container);
+  border-bottom: 1px solid var(--c-warning);
+  color: var(--c-warning);                /* 4.7:1 light, 5.4:1 dark */
+  font: 700 0.75rem "Inter", system-ui, sans-serif;
   text-align: center;
 }
 body.is-offline #hf-offline { display: block; }
@@ -247,27 +369,80 @@ body.is-offline #hf-offline { display: block; }
   top: calc(var(--safe-top) + var(--appbar-h));
   left: 0; right: 0;
   bottom: calc(var(--safe-bottom) + var(--tabbar-h));
-  background: #dfe8e0;
+  background: var(--c-map-ground);
 }
-/* Leaflet's default controls are desktop-sized; enlarge for thumbs and keep
-   them clear of the app bar and tab bar. */
-.leaflet-touch .leaflet-bar a { width: 38px; height: 38px; line-height: 38px; font-size: 20px; }
-.leaflet-bottom { bottom: 4px; }
-.leaflet-control-attribution { font-size: 10px; }
+/* OSM tiles are drawn for a light UI. In dark mode they are dimmed rather than
+   inverted — inverting would make vegetation red and water orange, which on a
+   map a carer navigates by would be worse than merely bright. */
+@media (prefers-color-scheme: dark) {
+  .leaflet-tile-pane { filter: brightness(0.72) saturate(0.9); }
+}
+/* Leaflet's controls are desktop-sized (30px), its attribution is 10px, and it
+   hard-codes a white background that leaves its +/- glyphs at 1.2:1 once the
+   app is in dark mode. All three are corrected here: 48dp targets, the 12sp
+   floor, and the control painted from the same surface tokens as everything
+   else so it inverts with the theme. */
+.leaflet-touch .leaflet-bar a {
+  width: 3rem; height: 3rem; line-height: 3rem;   /* 48dp */
+  font-size: 1.25rem;
+  color: var(--c-on-surface);
+  background: var(--c-surface);
+}
+.leaflet-touch .leaflet-bar a:hover,
+.leaflet-touch .leaflet-bar a:focus { background: var(--c-primary-container); }
+.leaflet-touch .leaflet-bar a.leaflet-disabled { color: var(--c-on-surface-variant); opacity: 0.6; }
+.leaflet-touch .leaflet-bar {
+  border: 1px solid var(--c-outline);
+  background: var(--c-surface);
+}
+.leaflet-bottom { bottom: 0.25rem; }
+.leaflet-control-attribution {
+  font-size: 0.75rem !important;
+  color: var(--c-on-surface);
+  background: var(--c-surface) !important;
+}
+/* Underlined as well as coloured — a link is never signalled by hue alone —
+   and padded out to a 24px target rather than Leaflet's 14px default. */
+.leaflet-control-attribution a {
+  color: var(--c-primary);
+  text-decoration: underline;
+  display: inline-block;
+  padding: 0.3125rem 0.125rem;
+}
+
 .hf-map-fab {
   position: absolute;
-  right: 12px;
-  bottom: calc(var(--safe-bottom) + var(--tabbar-h) + 16px);
+  right: 0.75rem;
+  bottom: calc(var(--safe-bottom) + var(--tabbar-h) + 1rem);
   z-index: 500;
-  width: 48px; height: 48px;
+  width: 3rem; height: 3rem;
   border-radius: 50%;
-  border: 1px solid var(--color-line, #dbe5dd);
-  background: #fff;
-  font-size: 21px;
+  border: 1px solid var(--c-outline);
+  background: var(--c-surface);
+  font-size: 1.3125rem;
   box-shadow: 0 4px 16px rgba(10, 30, 18, 0.24);
   display: flex; align-items: center; justify-content: center;
 }
 .hf-map-fab:active { transform: scale(0.94); }
+
+/* Map legend — floats over the map, clear of the app bar and the FAB.
+   Each entry shows the marker's SHAPE as well as its colour. */
+.hf-map-legend {
+  position: absolute;
+  top: calc(var(--safe-top) + var(--appbar-h) + 0.625rem);
+  right: 0.625rem;
+  z-index: 500;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3125rem;
+  padding: 0.5rem 0.625rem;
+  border-radius: 0.625rem;
+  background: var(--c-surface);
+  border: 1px solid var(--c-outline);
+  box-shadow: 0 2px 10px rgba(10, 30, 18, 0.16);
+  font: 600 0.75rem "Inter", system-ui, sans-serif;
+  color: var(--c-on-surface);
+}
 
 /* Splash held until the first screen paints, so the app never shows a
    half-built page the way a slow web page does. */
@@ -279,28 +454,18 @@ body.is-offline #hf-offline { display: block; }
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 14px;
-  background: linear-gradient(160deg, #1e4d34, #256b45);
-  color: #eaf5ee;
+  gap: 0.875rem;
+  background: #16412c;
+  color: #eaf5ee;                          /* 11.4:1 — the splash is always dark */
   font-family: "Poppins", system-ui, sans-serif;
   transition: opacity 300ms linear;
 }
 #hf-splash.hide { opacity: 0; pointer-events: none; }
 
-/* Map legend — floats over the map, clear of the app bar and the FAB */
-.hf-map-legend {
-  position: absolute;
-  top: calc(var(--safe-top) + var(--appbar-h) + 10px);
-  right: 10px;
-  z-index: 500;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  padding: 8px 10px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid var(--color-line, #dbe5dd);
-  box-shadow: 0 2px 10px rgba(10, 30, 18, 0.14);
-  font: 600 11px "Inter", system-ui, sans-serif;
-  color: var(--color-ink2, #33493b);
+/* ── Forced-colours / high-contrast mode ─────────────────────────── */
+/* When the OS takes over colour, keep the boundaries that carry meaning. */
+@media (forced-colors: active) {
+  .hf-card, .hf-list, .hf-stat, .hf-field, .hf-map-legend,
+  #hf-appbar, #hf-tabbar, #hf-sheet { border: 1px solid CanvasText; }
+  .hf-tab[aria-selected="true"] .ic { outline: 2px solid Highlight; }
 }

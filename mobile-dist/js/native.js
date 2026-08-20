@@ -58,6 +58,25 @@
     },
 
     /**
+     * Has location already been granted? Used to decide whether the app still
+     * owes the carer an explanation before the system prompt appears. Only
+     * ever reads the current state — it never triggers a request itself.
+     */
+    async hasLocationPermission() {
+      try {
+        if (isNative && has('Geolocation')) {
+          const s = await plugins.Geolocation.checkPermissions();
+          return s.location === 'granted' || s.coarseLocation === 'granted';
+        }
+        if (global.navigator && navigator.permissions) {
+          const s = await navigator.permissions.query({ name: 'geolocation' });
+          return s.state === 'granted';
+        }
+      } catch (e) {}
+      return false;
+    },
+
+    /**
      * Current position. Uses the Geolocation plugin natively (which routes
      * through the OS permission prompt) and the standard web API otherwise.
      * Resolves to null rather than throwing — a carer with location off should

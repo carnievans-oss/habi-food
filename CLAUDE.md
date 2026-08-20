@@ -48,6 +48,25 @@ APK ships stale CSS.
 Styling is Tailwind v4 compiled locally into `mobile-dist/css/tailwind.css`.
 Never link a Tailwind CDN: the packaged app must render with no network.
 
+### Accessibility rules that must not regress
+
+`npm run check:a11y` (part of `mobile:build`) enforces these; docs/MOBILE.md
+explains them.
+
+- Colour comes from the Material 3 role tokens in `css/app.tailwind.css`, in
+  both the light and dark blocks. Never hard-code a colour in a component rule
+  — the tones are solved for 4.5:1 (text) and 3:1 (boundaries), and a literal
+  bypasses the check.
+- Font sizes are `rem`, from the `--text-*` scale. Never px, and never below
+  `0.75rem` (12sp). `MainActivity` maps the Android system font scale onto the
+  WebView, which is what makes rem behave like sp — do not remove it.
+- Do not add `user-scalable=no` or `maximum-scale` to the viewport.
+- Touch targets are at least 48dp.
+- Never let colour be the only carrier of a status: badges take a glyph, map
+  markers take a shape, the selected tab takes an indicator and a weight.
+- Do not orientation-lock the activity; the layout must work in landscape, on
+  a tablet and in split-screen.
+
 ## Working on the desktop app
 
 `index.html` is one large file with inline styles and scripts. Match the

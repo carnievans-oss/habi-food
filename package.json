@@ -2,12 +2,12 @@
   "name": "habi-food",
   "version": "1.0.0",
   "private": true,
-  "description": "Habi-Food — Australia's Wildlife Carer Network. Desktop web app at the repo root; isolated mobile web build in mobile-dist/, packaged for Android with Capacitor.",
+  "description": "Habi-Food \u2014 Australia's Wildlife Carer Network. Desktop web app at the repo root; isolated mobile web build in mobile-dist/, packaged for Android with Capacitor.",
   "scripts": {
     "mobile:css": "tailwindcss -i mobile-dist/css/app.tailwind.css -o mobile-dist/css/tailwind.css --minify",
     "mobile:watch": "tailwindcss -i mobile-dist/css/app.tailwind.css -o mobile-dist/css/tailwind.css --watch",
     "mobile:domain": "node scripts/extract-domain.js",
-    "mobile:build": "npm run mobile:domain && npm run mobile:css && npm run check:isolation",
+    "mobile:build": "npm run mobile:domain && npm run mobile:css && npm run check:isolation && npm run check:a11y",
     "mobile:serve": "node scripts/serve-mobile.js",
     "check:isolation": "node scripts/check-isolation.js",
     "android:sync": "npm run mobile:build && cap sync android",
@@ -15,7 +15,8 @@
     "android:run": "npm run android:sync && cap run android",
     "ios:add": "cap add ios",
     "ios:sync": "npm run mobile:build && cap sync ios",
-    "ios:open": "cap open ios"
+    "ios:open": "cap open ios",
+    "check:a11y": "node scripts/check-a11y.js"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.0",
