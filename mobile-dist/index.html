@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="UTF-8">
+<!-- viewport-fit=cover lets the layout reach under the notch and home indicator;
+     the safe-area insets in css/native.css put the content back where it belongs.
+     Zoom is deliberately NOT blocked: user-scalable=no would deny a low-vision
+     carer the last resort of pinching in, and the layout reflows to 200% text
+     without clipping (every size is in rem). -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#1b553a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Habi-Food">
+<meta name="format-detection" content="telephone=no">
+<title>Habi-Food — Field</title>
+
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/icon-180.png">
+
+<!-- Local first: the shell must render with no network. Fonts are the one
+     progressive enhancement — the stack falls back to the system UI font. -->
+<link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+<link rel="stylesheet" href="css/tailwind.css">
+<link rel="stylesheet" href="css/native.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@700;800;900&display=swap" media="print" onload="this.media='all'">
+</head>
+<body>
+
+<!-- Splash — held until the first screen has painted -->
+<div id="hf-splash">
+  <div style="font-size:52px">🌿</div>
+  <div style="font-weight:800;font-size:22px;letter-spacing:.5px">Habi-Food</div>
+  <div style="font-size:13px;opacity:.75">Wildlife carer network</div>
+</div>
+
+<!-- App bar -->
+<header id="hf-appbar">
+  <div class="bar">
+    <span class="text-title-lg leading-none">🌿</span>
+    <span class="flex-1 min-w-0">
+      <span id="hf-title" class="block font-display font-black text-title-sm text-primary leading-tight truncate">Habi-Food</span>
+      <span id="hf-sub" class="block text-label-sm text-on-surface-variant leading-tight truncate"></span>
+    </span>
+  </div>
+  <div id="hf-offline">Offline — showing saved data. Changes will sync when you have signal.</div>
+</header>
+
+<!-- Pull-to-refresh indicator -->
+<div id="hf-ptr"><span class="spin"></span><span class="label">Pull to refresh</span></div>
+
+<!-- The single scroll region. One screen at a time — no columns, no panes. -->
+<main id="hf-scroll"></main>
+
+<!-- Bottom navigation — thumb-reachable, five destinations, always visible -->
+<nav id="hf-tabbar" role="tablist" aria-label="Main"></nav>
+
+<!-- Bottom sheet for detail -->
+<div id="hf-sheet-scrim"></div>
+<section id="hf-sheet" role="dialog" aria-modal="true" aria-labelledby="hf-sheet-title">
+  <div id="hf-sheet-handle">
+    <div class="hf-sheet-grip"></div>
+    <div class="hf-sheet-head">
+      <div class="flex items-start gap-2">
+        <div class="flex-1 min-w-0">
+          <h2 id="hf-sheet-title" class="font-display font-black text-title text-primary leading-tight"></h2>
+          <p id="hf-sheet-sub" class="text-label text-on-surface-variant leading-tight mt-0.5"></p>
+        </div>
+        <button class="hf-btn-ghost px-3" onclick="HFApp.closeSheet()" aria-label="Close">✕</button>
+      </div>
+    </div>
+  </div>
+  <div id="hf-sheet-body" class="hf-sheet-body"></div>
+</section>
+
+<div id="hf-toast" role="status" aria-live="polite"></div>
+
+<!-- Capacitor's runtime is injected by the native shell; on the web this 404s
+     harmlessly and HFNative falls back to browser APIs. -->
+<script src="capacitor.js" onerror="void 0"></script>
+
+<!-- Firebase compat SDK — same project as the desktop build. Loaded from the
+     CDN and guarded: with no connection the app runs from its local cache. -->
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js" onerror="void 0"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js" onerror="void 0"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js" onerror="void 0"></script>
+
+<script src="vendor/leaflet/leaflet.js"></script>
+
+<script src="js/config.js"></script>
+<script src="js/domain.js"></script>
+<script src="js/store.js"></script>
+<script src="js/native.js"></script>
+<script src="js/data.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/screens.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

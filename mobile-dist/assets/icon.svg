@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Habi-Food">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#256b45"/>
+      <stop offset="1" stop-color="#1e4d34"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#g)"/>
+  <!-- eucalyptus sprig: a stem with paired leaves -->
+  <g fill="none" stroke="#a7c957" stroke-width="18" stroke-linecap="round">
+    <path d="M256 400 L256 150"/>
+  </g>
+  <g fill="#a7c957">
+    <ellipse cx="196" cy="318" rx="52" ry="27" transform="rotate(-28 196 318)"/>
+    <ellipse cx="316" cy="284" rx="52" ry="27" transform="rotate(28 316 284)"/>
+    <ellipse cx="200" cy="238" rx="48" ry="25" transform="rotate(-28 200 238)"/>
+    <ellipse cx="312" cy="204" rx="48" ry="25" transform="rotate(28 312 204)"/>
+  </g>
+  <circle cx="256" cy="140" r="26" fill="#f2c94c"/>
+</svg>

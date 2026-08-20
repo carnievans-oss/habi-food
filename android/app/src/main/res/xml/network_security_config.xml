@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Habi-Food network security policy.
+
+  Carer records are personal information held under a DEECA permit, so nothing
+  this app sends may travel in the clear. Every endpoint it uses is HTTPS:
+  Firebase Realtime Database, Firebase Auth, and the OpenStreetMap tile servers.
+
+  cleartextTrafficPermitted="false" makes that a platform-enforced guarantee
+  rather than a convention — an accidental http:// URL fails loudly in
+  development instead of quietly leaking a record in the field.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

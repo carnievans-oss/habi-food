@@ -1,0 +1,23 @@
+{
+  "appId": "au.com.habifood.app",
+  "appName": "Habi-Food",
+  "webDir": "mobile-dist",
+  "android": {
+    "backgroundColor": "#16412c"
+  },
+  "ios": {
+    "backgroundColor": "#16412c",
+    "contentInset": "never"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchAutoHide": false,
+      "backgroundColor": "#16412c",
+      "androidScaleType": "CENTER_CROP",
+      "showSpinner": false
+    },
+    "Keyboard": {
+      "resize": "native"
+    }
+  }
+}

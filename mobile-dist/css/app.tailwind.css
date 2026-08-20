@@ -1,0 +1,231 @@
+/* ═══════════════════════════════════════════════════════════════════
+   Habi-Food Mobile — Tailwind entry (build input)
+
+   THIS FILE IS THE ONLY MOBILE STYLE SOURCE. It compiles to css/tailwind.css:
+       npm run mobile:css        (one-off)
+       npm run mobile:watch      (watch mode)
+
+   Never link a Tailwind CDN here — the Capacitor shell must render with no
+   network (carers work in the bush with no signal). The compiled file ships.
+   ═══════════════════════════════════════════════════════════════════ */
+@import "tailwindcss";
+
+/* Scan the mobile build only. Desktop HTML at the repo root is deliberately
+   out of scope — see docs/MOBILE.md for the isolation rules. */
+@source "../index.html";
+@source "../js/**/*.js";
+
+/* ═══════════════════════════════════════════════════════════════════
+   COLOUR — Material 3 role names over an eucalyptus tonal palette.
+
+   Every tone below was chosen by solving for its contrast target rather than
+   picked by eye (scripts in the accessibility notes of docs/MOBILE.md):
+
+     · text roles clear 4.5:1 against BOTH surface (#fff) and the page
+       (#eef2ee), and against their own container tint, so a badge is as
+       legible as body copy;
+     · `outline` — the boundary of a real component (card, list, input,
+       button, tab bar) — clears 3:1 against both;
+     · `outline-variant` is the decorative divider tone Material defines for
+       lines *inside* an already-bounded component. It is deliberately below
+       3:1: it separates, it does not delimit.
+
+   Contrast is verified in CI-able form by `npm run check:a11y`. Change a tone
+   here and that check tells you what it broke.
+   ═══════════════════════════════════════════════════════════════════ */
+@theme {
+  /* Surfaces */
+  --color-surface:            #ffffff;   /* cards, sheets, bars */
+  --color-surface-container:  #eef2ee;   /* the page behind them */
+  --color-surface-dim:        #e3eae5;   /* map ground, pressed states */
+
+  /* Content on surfaces */
+  --color-on-surface:         #18251f;   /* 15.9:1 on surface, 14.0:1 on page */
+  --color-on-surface-variant: #577061;   /*  5.4:1 on surface,  4.8:1 on page */
+
+  /* Primary — eucalyptus */
+  --color-primary:            #1b553a;   /*  8.7:1 on surface; white on it 8.7:1 */
+  --color-on-primary:         #ffffff;
+  --color-primary-container:  #e5f5ee;
+  --color-on-primary-container: #14432e;
+
+  /* Status roles, each with a container tint that keeps its text at 4.5:1 */
+  --color-error:              #be3b2d;
+  --color-error-container:    #f7eae9;
+  --color-warning:            #985e06;
+  --color-warning-container:  #f5efe5;
+  --color-info:               #2d6eb4;
+  --color-info-container:     #e9eff7;
+
+  /* Boundaries */
+  --color-outline:            #6c937c;   /* 3.4:1 surface / 3.0:1 page */
+  --color-outline-variant:    #d3ded8;   /* dividers inside a component */
+
+  /* Map marker fills — each clears 3:1 against map tiles and carries a
+     distinct SHAPE as well, so colour is never the only signal. */
+  --color-marker-spot:        #1b553a;
+  --color-marker-release:     #4a7a2c;
+  --color-marker-rescue:      #985e06;
+
+  --font-display: "Poppins", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  /* ── TYPE SCALE ──────────────────────────────────────────────────
+     Every size is in rem, never px. rem resolves against the root font
+     size, which follows the platform text-size setting — on Android the
+     WebView's textZoom is set from the system font scale in MainActivity,
+     which is what makes these behave as sp rather than hard pixels.
+
+     0.75rem = 12sp is the floor. Nothing in the app is smaller. */
+  --text-label-sm:   0.75rem;    /* 12sp — tab labels, badges, captions */
+  --text-label:      0.8125rem;  /* 13sp */
+  --text-body-sm:    0.875rem;   /* 14sp */
+  --text-body:       0.9375rem;  /* 15sp — default row and paragraph text */
+  --text-body-lg:    1rem;       /* 16sp — inputs (below this iOS zooms) */
+  --text-title-sm:   1.0625rem;  /* 17sp */
+  --text-title:      1.125rem;   /* 18sp */
+  --text-title-lg:   1.375rem;   /* 22sp */
+  --text-headline:   1.5rem;     /* 24sp */
+  --text-display:    1.625rem;   /* 26sp — stat figures */
+
+  --radius-sheet: 1.25rem;
+  --ease-native: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* ── Component layer: native-feeling primitives ──────────────────── */
+@layer components {
+
+  /* Inset-grouped list, the iOS/Material settings idiom.
+     The container is a component: its edge uses `outline` at 3:1. */
+  .hf-list {
+    @apply bg-surface rounded-2xl border border-outline overflow-hidden;
+  }
+  /* Rows are separated by `outline-variant` — an internal divider, not the
+     boundary of the control. The row's own hit area is delimited by the list. */
+  .hf-row {
+    @apply w-full flex items-center gap-3 px-4 text-left bg-surface
+           border-b border-outline-variant last:border-b-0;
+    min-height: 3.25rem;                 /* 52dp, comfortably over the 48dp minimum */
+  }
+  .hf-row:active { background-color: var(--color-primary-container); }
+
+  /* Wraps rather than truncating: a browse item clipped mid-species name is
+     useless, and a phone has vertical room to spare. */
+  .hf-row-title { @apply text-body font-semibold text-on-surface leading-snug break-words; }
+  .hf-row-sub   { @apply text-label text-on-surface-variant leading-snug mt-0.5 break-words; }
+
+  /* Chevron: the second affordance on a tappable row, alongside the label
+     weight. Sized and coloured to clear 3:1 as a non-text indicator. */
+  .hf-chev::after {
+    content: "";
+    @apply block w-2 h-2 border-r-2 border-b-2 border-on-surface-variant rotate-[-45deg] shrink-0;
+  }
+
+  .hf-card { @apply bg-surface rounded-2xl border border-outline p-4; }
+  .hf-card-head {
+    @apply flex items-center justify-between mb-3 text-label-sm font-bold
+           uppercase tracking-wider text-on-surface-variant;
+  }
+
+  /* Buttons — pressed state is instant, the way a native control behaves.
+     Every variant carries a visible boundary, not colour alone. */
+  .hf-btn, .hf-btn-primary, .hf-btn-secondary, .hf-btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4
+           font-semibold text-body select-none border;
+    min-height: 3rem;                    /* 48dp — Material touch-target minimum */
+    transition: transform 90ms var(--ease-native), background-color 120ms linear;
+  }
+  .hf-btn:active, .hf-btn-primary:active,
+  .hf-btn-secondary:active, .hf-btn-ghost:active { transform: scale(0.97); }
+
+  .hf-btn-primary   { @apply bg-primary text-on-primary border-primary; }
+  .hf-btn-primary:active   { @apply bg-on-primary-container; }
+  .hf-btn-secondary { @apply bg-surface text-primary border-outline; }
+  .hf-btn-secondary:active { @apply bg-primary-container; }
+  .hf-btn-ghost     { @apply text-on-surface-variant border-transparent; }
+  .hf-btn-block     { @apply w-full; }
+
+  /* Pills. Each carries a glyph as well as a hue — severity is never conveyed
+     by colour alone (the glyph is set per-variant in js/ui.js). */
+  /* A pill wraps rather than running off the screen. At 200% text a label like
+     "Demo mode — sample data" is wider than a phone, and a badge that overflows
+     the viewport is worse than one that takes two lines. */
+  .hf-pill, .hf-pill-ok, .hf-pill-warn,
+  .hf-pill-alert, .hf-pill-info, .hf-pill-mute {
+    @apply inline-flex items-start gap-1 rounded-2xl px-2.5 py-1
+           text-label-sm font-bold leading-snug text-left
+           max-w-full min-w-0 break-words border;
+  }
+  /* The glyph stays on the first line beside the text, never wrapping alone. */
+  .hf-pill > [aria-hidden] { @apply shrink-0; }
+  .hf-pill-ok    { @apply bg-primary-container text-primary border-primary/25; }
+  .hf-pill-warn  { @apply bg-warning-container text-warning border-warning/25; }
+  .hf-pill-alert { @apply bg-error-container   text-error   border-error/25; }
+  .hf-pill-info  { @apply bg-info-container    text-info    border-info/25; }
+  .hf-pill-mute  { @apply bg-surface-container text-on-surface-variant border-outline/40; }
+
+  .hf-stat { @apply bg-surface rounded-2xl border border-outline px-3 py-3 text-center; }
+  .hf-stat-n { @apply block text-display font-black leading-none text-primary font-display; }
+  .hf-stat-l { @apply block text-label-sm font-bold uppercase tracking-wide text-on-surface-variant mt-1; }
+
+  /* Text fields. 16sp minimum so iOS never zooms on focus, and a 3:1 boundary
+     because an input's edge is what tells you it is an input. */
+  .hf-field {
+    @apply w-full rounded-xl border border-outline bg-surface px-3.5 text-on-surface
+           placeholder:text-on-surface-variant text-body-lg;
+    min-height: 3rem;                    /* 48dp */
+  }
+  .hf-field:focus {
+    @apply outline-none border-primary;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 30%, transparent);
+  }
+  .hf-label { @apply block text-label font-bold text-on-surface mb-1.5; }
+
+  .hf-section {
+    @apply text-label-sm font-bold uppercase tracking-wider text-on-surface-variant
+           px-1 mb-2 mt-5 first:mt-0;
+  }
+
+  .hf-empty { @apply text-center text-body-sm text-on-surface-variant py-8 px-5; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   DARK SCHEME
+
+   Core app quality asks that app content — including web content — support
+   both light and dark themes. The Android WebView follows the system setting,
+   so the whole scheme swaps by redefining the same role tokens: no component
+   rule below knows which theme it is in.
+
+   The dark tones were solved the same way as the light ones, against the dark
+   surfaces rather than white, and `npm run check:a11y` checks both schemes.
+   ═══════════════════════════════════════════════════════════════════ */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-surface:              #151917;
+    --color-surface-container:    #0d110f;
+    --color-surface-dim:          #212724;
+
+    --color-on-surface:           #e3ebe6;   /* 14.6:1 on surface */
+    --color-on-surface-variant:   #adc2b5;   /*  9.4:1 on surface */
+
+    --color-primary:              #6fd9a1;   /* 10.2:1 on surface */
+    --color-on-primary:           #08120c;   /* 11.0:1 on the primary fill */
+    --color-primary-container:    #20402f;
+    --color-on-primary-container: #e3ebe6;
+
+    --color-error:                #f0857a;
+    --color-error-container:      #452a27;
+    --color-warning:              #e5a336;
+    --color-warning-container:    #42371f;
+    --color-info:                 #7cb0e8;
+    --color-info-container:       #22324a;
+
+    --color-outline:              #63796d;   /* 3.8:1 on surface */
+    --color-outline-variant:      #333f39;
+
+    --color-marker-spot:          #4cc98c;
+    --color-marker-release:       #8dc44f;
+    --color-marker-rescue:        #e0a13d;
+  }
+}

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Habi-Food</string>
+    <string name="title_activity_main">Habi-Food</string>
+    <string name="package_name">au.com.habifood.app</string>
+    <string name="custom_url_scheme">au.com.habifood.app</string>
+</resources>
