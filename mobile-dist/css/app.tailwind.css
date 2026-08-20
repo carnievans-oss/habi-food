@@ -1,0 +1,126 @@
+/* ═══════════════════════════════════════════════════════════════════
+   Habi-Food Mobile — Tailwind entry (build input)
+
+   THIS FILE IS THE ONLY MOBILE STYLE SOURCE. It compiles to css/tailwind.css:
+       npm run mobile:css        (one-off)
+       npm run mobile:watch      (watch mode)
+
+   Never link a Tailwind CDN here — the Capacitor shell must render with no
+   network (carers work in the bush with no signal). The compiled file ships.
+   ═══════════════════════════════════════════════════════════════════ */
+@import "tailwindcss";
+
+/* Scan the mobile build only. Desktop HTML at the repo root is deliberately
+   out of scope — see docs/MOBILE.md for the isolation rules. */
+@source "../index.html";
+@source "../js/**/*.js";
+
+/* ── Design tokens — eucalyptus palette, shared visual language with the
+      desktop app but re-declared here so mobile owns its own values. ── */
+@theme {
+  --color-euca:    #1e4d34;
+  --color-forest:  #256b45;
+  --color-forest2: #2e7d46;
+  --color-sage:    #6ea476;
+  --color-leaf:    #a7c957;
+  --color-wattle:  #f2c94c;
+
+  --color-ink:     #1a2b1f;
+  --color-ink2:    #33493b;
+  --color-muted:   #5f7a66;
+  --color-line:    #dbe5dd;
+  --color-canvas:  #eef2ee;
+  --color-surface: #ffffff;
+
+  --color-danger:  #c0392b;
+  --color-warn:    #c87a00;
+  --color-info:    #2b6cb0;
+
+  --font-display: "Poppins", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  /* Native chrome heights — referenced by the safe-area layout in native.css */
+  --spacing-appbar: 3.5rem;
+  --spacing-tabbar: 3.75rem;
+
+  --radius-sheet: 1.25rem;
+  --ease-native: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* ── Component layer: native-feeling primitives ──────────────────── */
+@layer components {
+
+  /* Inset-grouped list, the iOS/Material settings idiom */
+  .hf-list {
+    @apply bg-surface rounded-2xl border border-line overflow-hidden;
+  }
+  .hf-row {
+    @apply w-full flex items-center gap-3 px-4 text-left bg-surface
+           border-b border-line last:border-b-0;
+    min-height: 3.25rem;                 /* 52px — comfortably above the 44px tap floor */
+  }
+  .hf-row:active { background-color: #e8f1ea; }
+  .hf-row-title { @apply text-[15px] font-semibold text-ink leading-snug break-words; }
+  .hf-row-sub   { @apply text-[13px] text-muted leading-snug mt-0.5 break-words; }
+  .hf-chev::after {
+    content: "";
+    @apply block w-2 h-2 border-r-2 border-b-2 border-muted/60 rotate-[-45deg] shrink-0;
+  }
+
+  /* Cards */
+  .hf-card { @apply bg-surface rounded-2xl border border-line p-4; }
+  .hf-card-head {
+    @apply flex items-center justify-between mb-3 text-[13px] font-bold
+           uppercase tracking-wider text-muted;
+  }
+
+  /* Buttons — pressed state is instant, the way a native control behaves */
+  .hf-btn, .hf-btn-primary, .hf-btn-secondary, .hf-btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4
+           font-semibold text-[15px] select-none;
+    min-height: 2.75rem;                 /* 44px tap target */
+    transition: transform 90ms var(--ease-native), background-color 120ms linear;
+  }
+  .hf-btn:active, .hf-btn-primary:active,
+  .hf-btn-secondary:active, .hf-btn-ghost:active { transform: scale(0.97); }
+
+  .hf-btn-primary   { @apply bg-forest text-white; }
+  .hf-btn-primary:active   { @apply bg-euca; }
+  .hf-btn-secondary { @apply bg-surface text-forest border border-line; }
+  .hf-btn-secondary:active { @apply bg-canvas; }
+  .hf-btn-ghost     { @apply text-muted; }
+  .hf-btn-block     { @apply w-full; }
+
+  /* Pills / badges */
+  .hf-pill, .hf-pill-ok, .hf-pill-warn,
+  .hf-pill-alert, .hf-pill-info, .hf-pill-mute {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-1
+           text-[12px] font-bold whitespace-nowrap max-w-full overflow-hidden text-ellipsis;
+  }
+  .hf-pill-ok    { @apply bg-forest/10 text-forest; }
+  .hf-pill-warn  { @apply bg-warn/10 text-warn; }
+  .hf-pill-alert { @apply bg-danger/10 text-danger; }
+  .hf-pill-info  { @apply bg-info/10 text-info; }
+  .hf-pill-mute  { @apply bg-canvas text-muted; }
+
+  /* Stat tile */
+  .hf-stat { @apply bg-surface rounded-2xl border border-line px-3 py-3 text-center; }
+  .hf-stat-n { @apply block text-[26px] font-black leading-none text-forest font-display; }
+  .hf-stat-l { @apply block text-[11px] font-bold uppercase tracking-wide text-muted mt-1; }
+
+  /* Form controls sized so iOS never zooms on focus (needs >= 16px) */
+  .hf-field {
+    @apply w-full rounded-xl border border-line bg-surface px-3.5 text-ink
+           placeholder:text-muted/70 text-[16px];
+    min-height: 2.875rem;
+  }
+  .hf-field:focus { @apply outline-none border-forest ring-2 ring-forest/20; }
+  .hf-label { @apply block text-[13px] font-bold text-ink2 mb-1.5; }
+
+  /* Section heading between cards */
+  .hf-section {
+    @apply text-[12px] font-bold uppercase tracking-wider text-muted px-1 mb-2 mt-5 first:mt-0;
+  }
+
+  .hf-empty { @apply text-center text-[14px] text-muted py-8 px-5; }
+}
